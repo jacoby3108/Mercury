@@ -1,0 +1,11 @@
+
+gcc -c axbtnmap.c
+gcc -c joyapi.c
+
+gcc udp.c joyapi.o axbtnmap.o -o udp
+
+
+Ejecutar
+./jstest  /dev/input/js0 
+
+
