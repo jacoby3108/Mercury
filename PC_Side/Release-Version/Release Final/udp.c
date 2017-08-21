@@ -61,7 +61,7 @@ char rcv_buf[BUFLEN];
 
 static js_event_t js;
 
-char joy_message[50];
+char joy_message[100];
 
 void mainTB1(void);
 void main_joy(void);
@@ -94,22 +94,24 @@ void main_joy(void)
 			if(js.type==JS_EVENT_BUTTON)
 				sprintf(joy_message,"B:%d,%d",js.number, js.value);
 			if(js.type==JS_EVENT_AXIS)
-				sprintf(joy_message,"A:%d,%d",js.number,js.value);
+			{
 			
+				int x=(int)((32767+js.value)/256.0);   //Remap  -32767 < js.value <32767 --> 0 < x < 255
+				sprintf(joy_message,"A:%d,%d",js.number,x); // Create message to kinetis
 			
-			printf("%s\n",joy_message);
+			}
+			printf("%s\n",joy_message); // show message on screen and send it 
 			
-		//	parse_joy_string();  //  this function goes in kinetis code
-			
-			
-
 	
 			send_UDP(joy_message); 
+			
+			//			parse_joy_string();  //  This function goes on Kinetis Board 
 			
 			usleep(50*ONE_MS); // 50ms * Retry poll time
 			
 			receive_UDP(rcv_buf);
-			printf("Data: %s\n" ,rcv_buf);
+			
+			printf("Data: %s\n" ,rcv_buf); // show received data (if nack was received ESP works Kinetis no)
 			
 
 		}	
@@ -118,6 +120,8 @@ void main_joy(void)
 	}	
 }
 
+
+// This code goes on Kinetis Board (this is a Test Bench)
 //// Importante activar la funcion Analog en el joystick
 
 // Button functions
@@ -251,7 +255,7 @@ void parse_joy_string(void)
 
 	if(!strcmp(joy_control_type,"B"))  //Was a button?
 	{
-		printf("ES BOTTON\n");
+		
 			
 		Button_Actions[joy_control_number](joy_control_value);	
 		
@@ -260,7 +264,7 @@ void parse_joy_string(void)
 		
 	if(!strcmp(joy_control_type,"A")) //Was an Axis?
 	{
-		printf("ES AXIS\n");
+		
 		
 		Axis_Actions[joy_control_number](joy_control_value);
 
@@ -268,7 +272,7 @@ void parse_joy_string(void)
 }
 
 
-void mainTB1(void)
+void mainTB1(void) // old Test Bench
 {
 
 	int	retry_count;

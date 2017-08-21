@@ -6,6 +6,7 @@ gcc udp.c joyapi.o axbtnmap.o -o udp
 
 
 Ejecutar
-./jstest  /dev/input/js0 
+./udp
 
-
+Nota verificar que el joystick este en /dev/input/js0 sino editar udp.c
+verificar que el joystick este en modo analogico
