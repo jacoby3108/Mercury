@@ -97,9 +97,9 @@ void main_joy(void)
 				sprintf(joy_message,"A:%d,%d",js.number,js.value);
 			
 			
-		//	printf("%s\n",joy_message);
+			printf("%s\n",joy_message);
 			
-			parse_joy_string();
+		//	parse_joy_string();  //  this function goes in kinetis code
 			
 			
 
@@ -118,64 +118,66 @@ void main_joy(void)
 	}	
 }
 
+//// Importante activar la funcion Analog en el joystick
+
 // Button functions
 
-void fbot0(int value)
+void fbot0(int value)			// Boton 1 verde
 {
 	printf("B0->%d\n",value);
 }
 
-void fbot1(int value)
+void fbot1(int value)			// Boton 2 Rojo
 {
 	printf("B1->%d\n",value);
 }
 
-void fbot2(int value)
+void fbot2(int value)			// Boton 3 Celeste
 {
 	printf("B2->%d\n",value);
 }
 
-void fbot3(int value)
+void fbot3(int value)			// Boton 4 Rosa
 {
 	printf("B3->%d\n",value);
 }
 
-void fbot4(int value)
+void fbot4(int value)			// Boton trasero izquierdo arriba
 {
-	printf("B4->%d\n",value);
+	printf("B4->%d\n",value);	
 }
 
-void fbot5(int value)
+void fbot5(int value)			// Boton trasero derecho arriba
 {
 	printf("B5->%d\n",value);
 }
 
-void fbot6(int value)
+void fbot6(int value)			// Boton trasero izquierdo abajo
 {
 	printf("B6->%d\n",value);
 }
 
-void fbot7(int value)
+void fbot7(int value)			// Boton trasero derecho abajo
 {
 	printf("B7->%d\n",value);
 }
 
 void fbot8(int value)
 {
-	printf("B8->%d\n",value);
+	printf("B8->%d\n",value);	// boton select
 }
 
-void fbot9(int value)
+void fbot9(int value)			// boton start
 {
 	printf("B9->%d\n",value);
 }
 
-void fbot10(int value)
+void fbot10(int value)			// Boton 10 Joystick derecho
 {
 	printf("B10->%d\n",value);
 }
 
-void fbot11(int value)
+void fbot11(int value)			// Boton 11 Joystick derecho
 {
 	printf("B11->%d\n",value);
 }
@@ -204,12 +206,12 @@ void faxis3(int value)
 	printf("A3->%d\n",value);
 }
 
-void faxis4(int value)
+void faxis4(int value)	// Flechas horizontales izq -32767 der +32767
 {
 	printf("A4->%d\n",value);
 }
 
-void faxis5(int value)
+void faxis5(int value)	// Flechas verticales  arriba -32767 abajo +32767
 {
 	printf("A5->%d\n",value);
 }
