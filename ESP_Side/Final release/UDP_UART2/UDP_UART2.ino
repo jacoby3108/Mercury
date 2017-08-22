@@ -128,7 +128,7 @@ void loop()
       strcpy(replyPacekt,"NACK");
 
       // IMPORTTANTE !!! no reducir este delay es critico // 
-      delay(50);                    // Avoid reading serial port status immediately after message was send to kinetis
+      delay(80);                    // Avoid reading serial port status immediately after message was send to kinetis
                                     // It seems that Serial.available() works too slow so false readings can happen 
 
                                    
