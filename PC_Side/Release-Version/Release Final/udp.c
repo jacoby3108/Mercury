@@ -25,8 +25,9 @@
 #include <linux/joystick.h>
 
 
-#define SERVER "192.168.0.100"     // esp8266 address
-#define PORT 5000   				//The port on which to send data
+//#define SERVER "192.168.0.100"     // esp8266 address
+#define SERVER "192.168.43.6"        // esp8266 address (using my phone)
+#define PORT 5000   				// The port on which to send data
 
 
 #define BUFLEN 512  //Max length of buffer
@@ -118,7 +119,7 @@ void main_joy(void)
 				
 					send_UDP(joy_message);
 						
-					receive_UDP(rcv_buf);
+				//	receive_UDP(rcv_buf);
 			
 					printf("Data: %s\n" ,rcv_buf); // show received data (if nack was received ESP works Kinetis no)
 			
@@ -134,7 +135,7 @@ void main_joy(void)
 			}
 			
 			usleep(delaylp);
-			delaylp=50*ONE_MS;
+			delaylp=5*ONE_MS;
 	}	
 }
 
