@@ -10,6 +10,7 @@
 #include <pthread.h>
 #include <stdlib.h>
 #include <unistd.h>
+#include <stdarg.h>
 
 #include <stdio.h> //printf
 #include <string.h> //memset
@@ -17,7 +18,7 @@
 #include <unistd.h> // close();
 #include <arpa/inet.h>
 #include <sys/socket.h>
-#include <stdio.h>
+
 
 // joystick
 #include "joyapi.h"
@@ -30,9 +31,10 @@
 #define PORT 5000   				// The port on which to send data
 
 
-#define BUFLEN 512  //Max length of buffer
+#define  BUFLEN 512  //Max length of buffer
 #define  ONE_MS    	1000	   // One mseg
-#define  time_delay(x)  (x/100)    // x in ms , minvalue 100mseg
+#define  TIME_BASE  50         // in mseg 
+#define  time_delay(x)  (x/TIME_BASE)    // x in ms , minvalue 100mseg
 
 
 
@@ -68,75 +70,315 @@ void mainTB1(void);
 void main_joy(void);
 
 void parse_joy_string(void);
+void create_output_message(void);
+int map_axis(__s16 value );
+void init_axes_state(void);
 
-void main(void)
-{
-	
-//	mainTB1();
-	main_joy();
-	
-	
-}
+//--------------------
+pthread_mutex_t printf_mutex;
+int sync_printf(const char *format, ...);
+
+void * thread1();
+void * thread2();
+void * thread3();
+void * thread4();
 
 __u32 delaylp=50*ONE_MS;
 __u32 last_time;
-void main_joy(void)
+unsigned int TimerTick;
+
+typedef enum {
+	JOY_ID_AXIS_LX,
+	JOY_ID_AXIS_LY,
+	JOY_ID_AXIS_RX,
+	JOY_ID_AXIS_RY,
+	JOY_ID_AXIS_PADX,
+	JOY_ID_AXIS_PADY,
+	JOY_ID_BUT_GREEN1,
+	JOY_ID_BUT_RED2,
+	JOY_ID_BUT_BLUE3,
+	JOY_ID_BUT_PINK4,
+	JOY_ID_BUT_L1,
+	JOY_ID_BUT_R1,
+	JOY_ID_BUT_L2,
+	JOY_ID_BUT_R2,
+	JOY_ID_BUT_SELECT,
+	JOY_ID_BUT_START,
+	JOY_ID_BUTT10,
+	JOY_ID_BUTT11,
+
+	JOY_CANT_IDS
+}joyCtrId_t;
+
+
+__s16 Control_Values[JOY_CANT_IDS];  // actual event values
+
+//(type,number)  --> JOY_ID
+
+int main(void)
 {
-	joy_init();
+
+		int status;
+        pthread_t tid1,tid2,tid3,tid4;
+        pthread_mutex_init(&printf_mutex, NULL);
+        
+        printf("Release 1.0 \n");
+        joy_init();
+        
+        srand(time(NULL));
+		
+
+        pthread_create(&tid1,NULL,thread1,NULL);
+        pthread_create(&tid2,NULL,thread2,NULL);
+        pthread_create(&tid3,NULL,thread3,NULL);
+        pthread_create(&tid4,NULL,thread4,NULL);
+        
+        pthread_join(tid1,NULL);
+        pthread_join(tid2,NULL);
+        pthread_join(tid3,NULL);
+        pthread_join(tid4,NULL);
+        return 0;
+
 	
+}
+
+
+
+
+void * thread1()  // Time base Thread
+{
+    while(1)
+    {
+               
+		usleep(TIME_BASE*ONE_MS); // TIME_BASE in ms * 
+
+		if (TimerTick)
+			TimerTick--;
+	
+    }
+}
+
+void * thread2() // Periodic Task Thread
+
+{
+	static int r=0;
 	
 	while (1) 
-	{		
-			if (joy_read(&js)==True){
-		
-				
-				//	printf("<<<<<<<< EVENT <<<<<<<<<<<<<\n");
-				//	printf("Event: type %d, time %d, number %d, value %d\n",js.type, js.time, js.number, js.value); 
-				//  sprintf(joy_message,"Event: type %d,number %d, value %d",js.type, js.number, js.value);
+	{
 
-				printf("Delta_Time: %d\n",js.time-last_time);
+		if (!TimerTick)			// Wait for Thread1
+		{
+	   	  
+	        TimerTick=time_delay(100);             // 100ms 
+	       // sync_printf("Thread 2 r=%d\n",r++);  // Test Print
+	        main_joy();
+	                
+	    }
 
-				if(js.time-last_time>7)
-				{
+	}
 
-					// Parse and re-encode 
-					if(js.type==JS_EVENT_BUTTON)
-						sprintf(joy_message,"B:%d,%d",js.number, js.value);
-			
-			
-					if(js.type==JS_EVENT_AXIS)
-					{
-			
-						int x=(int)((32767+js.value)/256.0);   //Remap  -32767 < js.value <32767 --> 0 < x < 255
-						
-						sprintf(joy_message,"A:%d,%d",js.number,x); // Create message to kinetis
-			
-						
-					}
-			
-			
-					printf("%s\n",joy_message); // show message on screen and send it 
-				
-					send_UDP(joy_message);
-						
-				//	receive_UDP(rcv_buf);
-			
-					printf("Data: %s\n" ,rcv_buf); // show received data (if nack was received ESP works Kinetis no)
-			
-				}	
-				else
-				{
-					printf("Noooooooooo \n");
-					delaylp=5*ONE_MS;
-				}
-				
-				last_time=js.time;
+}
+
+
+
+
+void * thread3() // The APP
+
+{
+	while (1)
+	{
 	
-			}
+				sync_printf(YELLOW_TEXT "The" " App\n" WHITE_TEXT );
+				sleep(1);
+	
+	}
+}
+
+void * thread4() // This thread reads joystick events 
+
+{    
+	
+	init_axes_state();
+	create_output_message();  // This Updates Output Vector
+	
+	while (1)
+	{
+		
+		if (joy_read(&js)==True){
+	
+				//sync_printf(RED_TEXT "<<<<<<<< EVENT <<<<<<<<<<<<<\n" WHITE_TEXT );
+				
+				if(js.type==JS_EVENT_INIT)
+				   sync_printf(RED_TEXT "<<<<<<<< INIT <<<<<<<<<<<<<\n" WHITE_TEXT );
+				
+				
+				if(js.type==JS_EVENT_BUTTON )
+				{		
+						switch(js.number)
+						{
+							case 0:
+							Control_Values[JOY_ID_BUT_GREEN1]=js.value;
+							break;
+						
+							case 1:
+							Control_Values[JOY_ID_BUT_RED2]=js.value;
+							break;
+						
+							case 2:
+							Control_Values[JOY_ID_BUT_BLUE3]=js.value;
+							break;
+						
+							case 3:
+							Control_Values[JOY_ID_BUT_PINK4]=js.value;
+							break;
+						
+							case 4:
+							Control_Values[JOY_ID_BUT_L1]=js.value;
+							break;
+						
+							case 5:
+							Control_Values[JOY_ID_BUT_R1]=js.value;
+							break;
+							case 6:
+							Control_Values[JOY_ID_BUT_L2]=js.value;
+							break;
+							case 7:
+							Control_Values[JOY_ID_BUT_R2]=js.value;
+							break;
+							case 8:
+							Control_Values[JOY_ID_BUT_SELECT]=js.value;
+							break;
+							case 9:
+							Control_Values[JOY_ID_BUT_START]=js.value;
+							break;
+							case 10:
+							Control_Values[JOY_ID_BUTT10]=js.value;
+							break;
+							case 11:
+							Control_Values[JOY_ID_BUTT11]=js.value;
+							break;
+														
+							default:
+							sync_printf(RED_TEXT "Boton Desconocido\n" WHITE_TEXT );
+						
+						
+						} // Button Switch
+				
+				
+				
+				} // Button If
+				
+				if(js.type==JS_EVENT_AXIS)
+				{		
+						switch(js.number)
+						{
+							case 0:
+							Control_Values[JOY_ID_AXIS_LX]=map_axis(js.value);
+							break;
+						
+							case 1:
+							Control_Values[JOY_ID_AXIS_LY]=map_axis(js.value);
+							break;
+						
+							case 2:
+							Control_Values[JOY_ID_AXIS_RX]=map_axis(js.value);
+							break;
+						
+							case 3:
+							Control_Values[JOY_ID_AXIS_RY]=map_axis(js.value);
+							break;
+						
+							case 4:
+							Control_Values[JOY_ID_AXIS_PADX]=map_axis(js.value);
+							break;
+						
+							case 5:
+							Control_Values[JOY_ID_AXIS_PADY]=map_axis(js.value);
+							break;
+							
+														
+							default:
+							sync_printf(RED_TEXT "Eje Desconocido\n" WHITE_TEXT );
+						
+						
+						} // Button Switch
+				
+				
+				
+				} // Axes If
+				
+				create_output_message();  // This Updates Output Vector
+			    
+			    //Just for Debug 
+				//sync_printf("%s",joy_message);	
+				//sync_printf("\n");
+				
+				
+				
+				
+		} // Event  if		
+	
+	} // thread while
+}
+
+
+int map_axis( __s16 value )
+{
+	return( (int)((32767+value)/256.0) );
+}
+
+
+
+//"J;valCtrl0;valCtrl1;...;valCtrlN
+
+void create_output_message(void)
+{
+	int id;
+	char temp[10];
+	//-- Build Output String --
+	memset(joy_message ,'\0', sizeof(joy_message));
+	strcpy(joy_message,"J");
+	for (id=0;id<=JOY_CANT_IDS-1;id++)
+	{
+		sprintf(temp,"%d",Control_Values[id]);
+		strcat(joy_message,";");
+		strcat(joy_message,temp);
+	}		
+}
+
+void init_axes_state(void)
+{
+
+	Control_Values[JOY_ID_AXIS_LX]=127;
+	Control_Values[JOY_ID_AXIS_LY]=127;
+	Control_Values[JOY_ID_AXIS_RX]=127;
+	Control_Values[JOY_ID_AXIS_RY]=127;
+	Control_Values[JOY_ID_AXIS_PADX]=127;
+	Control_Values[JOY_ID_AXIS_PADY]=127;
+
+}
+
+
+void main_joy(void)
+{
+	
+	
+		//printf("Event: type %d, time %d, number %d, value %d\n",js.type, js.time, js.number, js.value); 
+		
+	
+		// show message on screen and send it   
+		
+		sync_printf("%s",joy_message);	
+		sync_printf("\n");
+				
+
+				
+		send_UDP(joy_message);
+						
+		//	receive_UDP(rcv_buf);
 			
-			usleep(delaylp);
-			delaylp=5*ONE_MS;
-	}	
+				
+		
 }
 
 
@@ -287,5 +529,18 @@ int receive_UDP(char *buf)
  
     close(s);
     return 0;
+}
+
+
+int sync_printf(const char *format, ...)
+{
+    va_list args;
+    va_start(args, format);
+
+    pthread_mutex_lock(&printf_mutex);
+    vprintf(format, args);
+    pthread_mutex_unlock(&printf_mutex);
+
+    va_end(args);
 }
 

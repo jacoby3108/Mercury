@@ -60,7 +60,7 @@ static js_event_t js;
 
 
 
-int main (int argc, char **argv)
+int mainTB (int argc, char **argv)
 {
 	joy_init();
 	
